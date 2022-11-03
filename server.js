@@ -2,10 +2,15 @@ const  express = require('express');
 const app = express();
 const path = require('path')
 const mongoose = require('mongoose')
+const bcrypt = require('bcryptjs');
 const port = process.env.PORT || 3000;
-const Users = require('./src/models/Users');
+const User = require('./src/models/Users');
 // require('./src/db/conn');
 app.use(express.static(path.join(__dirname, 'views')));
+
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, './views'));
+
 
 
 //  databse connected
@@ -28,6 +33,7 @@ app.use(express.urlencoded({extended : false}))
 // get mthod 
 app.get('/login',(req,res) => res.render('login'));
 app.get('/register',(req,res) => res.render('register'));
+app.get('/index',(req,res) => res.render('index'));
 
 
 app.get('/', (req, res) => {
@@ -64,11 +70,12 @@ app.post('/register', (req,res) => {
           });          
         }
          else {
-          Users.findOne({ email : email})
-          .then(user => {
-            if (user){
-              //  user exsist
-              errors.push({message: 'Email is already registered'})
+           // validation pass
+           User.findOne({email:email})
+           .then(user => {
+            if(user) {
+              //user exist 
+              errors.push({msg:'Email is already register'})
               res.render('register', {
                 errors,  
                 username,
@@ -77,15 +84,36 @@ app.post('/register', (req,res) => {
                 email,
                 password
    
-             });      
+             });   
+            } else{
+                const newUser = new User({
+                  username,
+                  companyid,
+                  phone,
+                  email,
+                  password
+                }) 
+              //  hass pasword 
+              bcrypt.genSalt(10, (err,salt) =>
+              bcrypt.hash(newUser.password,salt,(err,hash) => 
+              {
+                    if(err)throw err;
+                    //set passwod hass
+                    newUser.password = hash;
+                    //save password
+                    newUser.save()
+                    .then(user => {
+                      res.redirect('/')
+                    })
+              }))
             }
-          })
+           })
         }
 
   
 })
 
-app.set('view engine', 'ejs');
+
 
 
 

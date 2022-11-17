@@ -18,10 +18,11 @@ require('./config/passport')(passport);
 
 // Login Page
 app.get('/login', forwardAuthenticated, (req, res,next) => res.render('login'));
+app.get('/register', forwardAuthenticated, (req, res,next) => res.render('register'));
 
 // Register Page
-app.get('/register', forwardAuthenticated, (req, res,next) => res.render('dashboard'));
-app.get('/dashboard.ejs', forwardAuthenticated, (req, res,next) => res.render('register'));
+app.get('/dashboard', forwardAuthenticated, (req, res,next) => res.render('dashboard'));
+
 
 //  databse connected
 
@@ -128,11 +129,6 @@ app.post('/register', (req,res) => {
   
 })
 
-app.get('/dashboard', ensureAuthenticated, (req, res) =>
-  res.render('dashboard', {
-    user: req.username
-  })
-);
 
 
 app.post('/login', (req, res, next) => {

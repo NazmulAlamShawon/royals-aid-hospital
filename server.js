@@ -1,17 +1,27 @@
 const  express = require('express');
 const app = express();
 const path = require('path')
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
+const passport = require('passport');
+const session = require('express-session');
 const bcrypt = require('bcryptjs');
+const flash = require('connect-flash');
 const port = process.env.PORT || 3000;
 const User = require('./src/models/Users');
 // require('./src/db/conn');
 app.use(express.static(path.join(__dirname, 'views')));
-
+const { forwardAuthenticated, ensureAuthenticated } = require('./config/auth');
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, './views'));
 
+require('./config/passport')(passport);
 
+// Login Page
+app.get('/login', forwardAuthenticated, (req, res,next) => res.render('login'));
+
+// Register Page
+app.get('/register', forwardAuthenticated, (req, res,next) => res.render('dashboard'));
+app.get('/dashboard.ejs', forwardAuthenticated, (req, res,next) => res.render('register'));
 
 //  databse connected
 
@@ -29,7 +39,16 @@ conncet();
 
 // bodyparser
 app.use(express.urlencoded({extended : false}))
-
+app.use(
+  session({
+    secret: 'secret',
+    resave: true,
+    saveUninitialized: true
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
+app.use(flash());
 // get mthod 
 app.get('/login',(req,res) => res.render('login'));
 app.get('/register',(req,res) => res.render('register'));
@@ -54,10 +73,7 @@ app.post('/register', (req,res) => {
         if(password.length < 8){
              errors.push({message:'password should be at least  8  characters'}) 
         }
-        // user limition 
-        
-
-        // 
+                  
         if(errors.length> 0 ){
           res.render('register', {
              errors,  
@@ -108,13 +124,24 @@ app.post('/register', (req,res) => {
               }))
             }
            })
-        }
-
+       }
   
 })
 
+app.get('/dashboard', ensureAuthenticated, (req, res) =>
+  res.render('dashboard', {
+    user: req.username
+  })
+);
 
 
+app.post('/login', (req, res, next) => {
+  passport.authenticate('local', {
+    successRedirect: '/dashboard',
+    failureRedirect: '/',
+    failureFlash: true
+  })(req, res, next);
+});
 
 
 app.listen (port, () => {
